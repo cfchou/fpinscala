@@ -136,6 +136,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   }
 
   // have the drawback of iterating twice
+  // but having the advantage of @tailrec brought by foldLeft
   def foldRightViaFoldLeft[A,B](l: List[A], z: B)(f: (A, B) => B): B = {
     foldLeft(reverse(l), z)((b, a) => f(a, b))
   }
@@ -150,11 +151,12 @@ object List { // `List` companion object. Contains functions for creating and wo
     reverse(foldLeft(reverse(a2), reverse(a1))((b, a) => Cons(a, b)))
   }
 
+
   def concat[A](l: List[List[A]]): List[A] = {
     foldRight(l, Nil:List[A])(append)
   }
 
-  def map[A,B](l: List[A])(f: A => B): List[B] = {
+  def map2[A,B](l: List[A])(f: A => B): List[B] = {
     @tailrec
     def map_helper(lst: List[A], acc: List[B]): List[B] = {
       lst match {
@@ -164,4 +166,15 @@ object List { // `List` companion object. Contains functions for creating and wo
     }
     map_helper(l, Nil)
   }
+
+  // instead of vanilla foldRight, using foldRightViaFoldLeft to avoid a
+  // potential stack overflow.
+  def map[A,B](l: List[A])(f: A => B): List[B] = {
+    foldRightViaFoldLeft(l, Nil: List[B])((a, b) => Cons(f(a), b))
+  }
+
+  def filter[A](l: List[A])(f: A => Boolean): List[A] = {
+    foldRightViaFoldLeft(l, Nil: List[A])((a, b) => if (f(a)) Cons(a, b) else b)
+  }
+
 }
