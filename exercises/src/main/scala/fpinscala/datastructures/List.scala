@@ -1,5 +1,12 @@
 package fpinscala.datastructures
 
+import scala.annotation.tailrec
+
+object ListApp extends App {
+  println(List.x)
+
+}
+
 sealed trait List[+A] // `List` data type, parameterized on a type, `A`
 case object Nil extends List[Nothing] // A `List` data constructor representing the empty list
 /* Another data constructor, representing nonempty lists. Note that `tail` is another `List[A]`,
@@ -50,19 +57,111 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRight(ns, 1.0)(_ * _) // `_ * _` is more concise notation for `(x,y) => x * y`; see sidebar
 
 
-  def tail[A](l: List[A]): List[A] = sys.error("todo")
+  //def tail[A](l: List[A]): List[A] = sys.error("todo")
+  def tail[A](l: List[A]): List[A] = {
+    l match {
+      case Cons(_, rest) => rest
+      case _ => throw new IllegalArgumentException
+    }
+  }
 
-  def setHead[A](l: List[A], h: A): List[A] = sys.error("todo")
+  def setHead[A](l: List[A], h: A): List[A] = {
+    l match {
+      case Cons(_, rest) => Cons(h, rest)
+      case _ => throw new IllegalArgumentException
+    }
+  }
 
-  def drop[A](l: List[A], n: Int): List[A] = sys.error("todo")
+  def drop[A](l: List[A], n: Int): List[A] = {
+    if (n == 0) {
+      l
+    } else {
+      l match {
+        case Cons(_, rest) => drop(rest, n - 1)
+        case _ => throw new IllegalArgumentException
+      }
+    }
+  }
 
-  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = sys.error("todo")
+  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = {
+    l match {
+      case Cons(h, rest) =>
+        if (f(h)) {
+          dropWhile(rest, f)
+        } else {
+          l
+        }
+      case _ => l
+    }
+  }
 
-  def init[A](l: List[A]): List[A] = sys.error("todo")
+  def init[A](l: List[A]): List[A] = {
+    l match {
+      case Cons(h, Nil) => Nil
+      case Cons(h, rest) => Cons(h, init(rest))
+      case _ => throw new IllegalArgumentException
+    }
+  }
 
-  def length[A](l: List[A]): Int = sys.error("todo")
+  def length[A](l: List[A]): Int = {
+    foldRight(l, 0)((_, acc) => acc + 1)
+  }
 
-  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = sys.error("todo")
+  @tailrec
+  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = {
+    l match {
+      case Cons(h, rest) => foldLeft(rest, f(z, h))(f)
+      case Nil => z
+    }
+  }
 
-  def map[A,B](l: List[A])(f: A => B): List[B] = sys.error("todo")
+  def reverse2[A](l: List[A]): List[A] = {
+    @tailrec
+    def helper(lst: List[A], acc:List[A]): List[A] = {
+      lst match {
+        case Cons(h, rest) => helper(rest, Cons(h, acc))
+        case Nil => Nil
+      }
+    }
+    helper(l, Nil)
+  }
+
+  def reverse[A](l: List[A]): List[A] = {
+    foldLeft(l, Nil: List[A])((b, a) => Cons(a, b))
+  }
+
+  // have the drawback of iterating twice
+  def foldLeftViaFoldRight[A,B](l: List[A], z: B)(f: (B, A) => B): B = {
+    foldRight(reverse(l), z)((a, b) => f(b, a))
+  }
+
+  // have the drawback of iterating twice
+  def foldRightViaFoldLeft[A,B](l: List[A], z: B)(f: (A, B) => B): B = {
+    foldLeft(reverse(l), z)((b, a) => f(a, b))
+  }
+
+
+  // in essence the same `append`
+  def appendViaFoldRight[A](a1: List[A], a2: List[A]): List[A] = {
+    foldRight(a1, a2)(Cons(_, _))
+  }
+
+  def appendViaFoldLeft[A](a1: List[A], a2: List[A]): List[A] = {
+    reverse(foldLeft(reverse(a2), reverse(a1))((b, a) => Cons(a, b)))
+  }
+
+  def concat[A](l: List[List[A]]): List[A] = {
+    foldRight(l, Nil:List[A])(append)
+  }
+
+  def map[A,B](l: List[A])(f: A => B): List[B] = {
+    @tailrec
+    def map_helper(lst: List[A], acc: List[B]): List[B] = {
+      lst match {
+        case Cons(h, rest) => map_helper(rest, Cons(f(h), acc))
+        case Nil => acc
+      }
+    }
+    map_helper(l, Nil)
+  }
 }
