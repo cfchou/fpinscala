@@ -177,4 +177,41 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRightViaFoldLeft(l, Nil: List[A])((a, b) => if (f(a)) Cons(a, b) else b)
   }
 
+  def flatMap[A, B](l: List[A])(f: A => List[B]): List[B] = {
+    concat(map(l)(f))
+  }
+
+  def filterViaFlatMap[A](l: List[A])(f: A => Boolean): List[A] = {
+    flatMap(l)(a => if (f(a)) List(a) else Nil)
+  }
+
+  def addPairwise(l1: List[Int], l2: List[Int]): List[Int] = {
+    (l1, l2) match {
+      case (_, Nil) => l1
+      case (Nil, _) => l2
+      case (Cons(a, ra), Cons(b, rb)) => Cons(a + b, addPairwise(ra, rb))
+    }
+  }
+
+  // unlike addPairwise, it stops once seeing Nil in either list
+  def zipWith[A, B, C](l1: List[A], l2: List[B])(f: (A, B) => C): List[C] = {
+    (l1, l2) match {
+      case (_, Nil) => Nil
+      case (Nil, _) => Nil
+      case (Cons(a, ra), Cons(b, rb)) => Cons(f(a, b), zipWith(ra, rb)(f))
+    }
+  }
+
+  def hasSubsequence[A](l1: List[A], l2: List[A]): Boolean = {
+    def cmp(l1: List[A], l2: List[A]): Boolean = {
+      (l1, l2) match {
+        case (_, Nil) => true
+        case (Nil, _) => false
+        case (Cons(a, ra), Cons(b, rb)) => a == b && cmp(ra, rb)
+      }
+    }
+
+    if (cmp(l1, l2)) true
+    else hasSubsequence(tail(l1), l2)
+  }
 }
