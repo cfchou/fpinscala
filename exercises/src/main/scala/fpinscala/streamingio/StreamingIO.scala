@@ -174,6 +174,13 @@ object SimpleStreamTransducers {
       go(this)
     }
 
+    // ????? a possible implementation of ones
+    val step: Process[I, Int] = Await {
+      case None => Halt()
+      case _ => Emit(1, step)
+    }
+    val ones = step.repeat
+
     def repeatN(n: Int): Process[I,O] = {
       def go(n: Int, p: Process[I,O]): Process[I,O] = p match {
         case Halt() => if (n > 0) go(n-1, this) else Halt()
@@ -289,13 +296,29 @@ object SimpleStreamTransducers {
     /*
      * Exercise 1: Implement `take`, `drop`, `takeWhile`, and `dropWhile`.
      */
-    def take[I](n: Int): Process[I,I] = ???
+    def take[I](n: Int): Process[I,I] = {
+      if (n == 0) Halt() else Await {
+        case None => Halt()
+        case Some(i) => Emit(i, take(n - 1))
+      }
+    }
 
-    def drop[I](n: Int): Process[I,I] = ???
+    def drop[I](n: Int): Process[I,I] = {
+      if (n == 0) id else Await {
+        case None => Halt()
+        case _ => drop(n - 1)
+      }
+    }
 
-    def takeWhile[I](f: I => Boolean): Process[I,I] = ???
+    def takeWhile[I](f: I => Boolean): Process[I,I] = Await {
+      case None => Halt()
+      case Some(i) => if (f(i)) Emit(i, takeWhile(f)) else takeWhile(f)
+    }
 
-    def dropWhile[I](f: I => Boolean): Process[I,I] = ???
+    def dropWhile[I](f: I => Boolean): Process[I,I] = Await {
+      case None => Halt()
+      case Some(i) => if (f(i)) dropWhile(f) else Emit(i, dropWhile(f))
+    }
 
     /* The identity `Process`, just repeatedly echos its input. */
     def id[I]: Process[I,I] = lift(identity)
