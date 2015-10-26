@@ -133,7 +133,17 @@ object SimpleStreamTransducers {
     /*
      * Exercise 5: Implement `|>`. Let the types guide your implementation.
      */
-    def |>[O2](p2: Process[O,O2]): Process[I,O2] = ???
+    def |>[O2](p2: Process[O,O2]): Process[I,O2] = p2 match {
+      case Halt() => Halt()
+      case Emit(o2, t2) => Emit(o2, this |> t2)
+      case Await(recv2) => this match {
+        case Halt() => Halt() |> recv2(None)
+        case Emit(o, t) => t |> recv2(Some(o))
+        case Await(recv) => Await {
+          opt => recv(opt) |> p2
+        }
+      }
+    }
 
     /*
      * Feed `in` to this `Process`. Uses a tail recursive loop as long
@@ -338,7 +348,13 @@ object SimpleStreamTransducers {
     /*
      * Exercise 3: Implement `mean`.
      */
-    def mean: Process[Double,Double] = ???
+    def mean: Process[Double,Double] = {
+      def go(s: Double, c: Double): Process[Double, Double] = Await {
+        case None => Halt()
+        case Some(i) => Emit((s + i) / (c + 1), go(s + i, c + 1))
+      }
+      go(0, 0)
+    }
 
     def loop[S,I,O](z: S)(f: (I,S) => (O,S)): Process[I,O] =
       await((i: I) => f(i,z) match {
@@ -347,9 +363,10 @@ object SimpleStreamTransducers {
 
     /* Exercise 4: Implement `sum` and `count` in terms of `loop` */
 
-    def sum2: Process[Double,Double] = ???
+    def sum2: Process[Double,Double] = loop(0.0)((i, s) => (i + s, i + s))
 
-    def count3[I]: Process[I,Int] = ???
+
+    def count3[I]: Process[I,Int] = loop(0)((_, s) => (s + 1, s + 1))
 
     /*
      * Exercise 7: Can you think of a generic combinator that would
