@@ -58,32 +58,44 @@ object Option {
     mean(xs).flatMap(m => mean(xs.map(x => math.pow(x - m, 2))))
   }
 
+  def lift[A, B](f: A => B): Option[A] => Option[B] = _ map f
+
   def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = {
-    /*
-    (a, b) match {
-      case (Some(va), Some(vb)) => Some(f(va, vb))
-      case (_, _) => None
-    }
-    */
-    a.flatMap(av => b.map(bv => f(av, bv)))
+    a.flatMap(x => b.map(y => f(x, y)))
   }
 
+  // sequence :: (Traversable t, Monad m) => t (m a) -> m (t a)
   def sequence[A](a: List[Option[A]]): Option[List[A]] = {
-    /*
-    a.foldLeft(Some(Nil): Option[List[A]])((acc, o) => o match {
-      case None => None
-      case Some(v) => acc match {
-        case Some(rest) => Some(v :: rest)
-        case _ => None
-      }
-    })
-    */
-    a match {
-      // case Nil => None
-      case Nil => Some(Nil)
-      case h :: rest => h.flatMap(x => sequence(rest).map(x :: _))
-    }
+    def folder(e: Option[A], acc: Option[List[A]]) = map2(e, acc)(_ :: _)
+    //val z: Option[List[A]] = Some(List())
+    val z: Option[List[A]] = Some(Nil)  // Nil instead of List() is more idiomatic
+    a.foldRight(z)(folder)
   }
 
-  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = sys.error("todo")
+  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = {
+    def folder(e: A, acc: Option[List[B]]): Option[List[B]] = map2(f(e), acc)(_ :: _)
+    val z: Option[List[B]] = Some(Nil)
+    a.foldRight(z)(folder)
+  }
+
+  def traverseSlow[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = sequence(a map f)
+
+  def sequenceViaTraverse[A](a: List[Option[A]]): Option[List[A]] = {
+    traverse[Option[A], A](a)(identity)
+  }
+
+  def sequence2[A](a: List[Option[A]]): Option[List[A]] = a match {
+    case Nil => Some(Nil)
+    case h::rest => h.flatMap(x => sequence2(rest).map(x::_))
+  }
+
+  def traverse2[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
+    case Nil => Some(Nil)
+    case h::rest => f(h).flatMap(b => traverse2(rest)(f).map(b::_))
+  }
+
+  def traverse3[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
+    case Nil => Some(Nil)
+    case h::rest => map2(f(h), traverse3(rest)(f))(_ :: _)
+  }
 }
