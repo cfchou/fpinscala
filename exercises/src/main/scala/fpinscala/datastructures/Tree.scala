@@ -51,8 +51,8 @@ object Tree {
 
   def fold2[A, B](t: Tree[A])(f: Leaf[A] => B)(g: Branch[A] => B): B = {
     t match {
-      case l@Leaf(_) => f(l)
-      case b@Branch(_, _) => g(b)
+      case l:Leaf[A] => f(l)
+      case b:Branch[A] => g(b)
     }
   }
 
