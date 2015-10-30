@@ -20,17 +20,50 @@ object Monoid {
     val zero = Nil
   }
 
-  val intAddition: Monoid[Int] = sys.error("todo")
+  // Monoid Law:
+  // associativity: op(a1, op(a2, a3)) == op(op(a1, a2), a3)
+  // identity: op(a, zero) == a && op(zero, a) == a
 
-  val intMultiplication: Monoid[Int] = sys.error("todo")
+  val intAddition: Monoid[Int] = new Monoid[Int] {
+    def op(a1: Int, a2: Int) = a1 + a2
+    def zero = 0
+  }
 
-  val booleanOr: Monoid[Boolean] = sys.error("todo")
+  val intMultiplication: Monoid[Int] = new Monoid[Int] {
+    override def op(a1: Int, a2: Int): Int = {
+      a1 * a2
+    }
+    override def zero: Int = 1
+  }
 
-  val booleanAnd: Monoid[Boolean] = sys.error("todo")
+  val booleanOr: Monoid[Boolean] = new Monoid[Boolean] {
+    override def op(a1: Boolean, a2: Boolean): Boolean = {
+      a1 | a2
+    }
+    override def zero: Boolean = false
+  }
 
-  def optionMonoid[A]: Monoid[Option[A]] = sys.error("todo")
+  val booleanAnd: Monoid[Boolean] = new Monoid[Boolean] {
+    override def op(a1: Boolean, a2: Boolean): Boolean = {
+      a1 & a2
+    }
+    override def zero: Boolean = true
+  }
 
-  def endoMonoid[A]: Monoid[A => A] = sys.error("todo")
+  // optionMonoid is like booleanOr
+  def optionMonoid[A]: Monoid[Option[A]] = new Monoid[Option[A]] {
+    override def op(a1: Option[A], a2: Option[A]): Option[A] = {
+      a1 orElse(a2)
+    }
+    override def zero: Option[A] = None
+  }
+
+  // op is compose function '.'
+  // (f.g).h == f.(g.h)
+  def endoMonoid[A]: Monoid[A => A] = new Monoid[(A) => A] {
+    override def op(a1: (A) => A, a2: (A) => A): (A) => A = a2 andThen a1
+    override def zero: (A) => A = identity
+  }
 
   // TODO: Placeholder for `Prop`. Remove once you have implemented the `Prop`
   // data type from Part 2.
