@@ -17,18 +17,51 @@ trait Stream[+A] {
     case Empty => None
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
   }
-  def take(n: Int): Stream[A] = sys.error("todo")
 
-  def drop(n: Int): Stream[A] = sys.error("todo")
+  def take(n: Int): Stream[A] = this match {
+    case Empty => empty
+    case Cons(h, t) => if (n > 0) cons[A](h(), t().take(n - 1)) else empty
+  }
 
-  def takeWhile(p: A => Boolean): Stream[A] = sys.error("todo")
+  def drop(n: Int): Stream[A] = this match {
+    case Empty => empty
+    case Cons(h, t) => if (n > 0) t().drop(n - 1) else t()
+  }
 
-  def forAll(p: A => Boolean): Boolean = sys.error("todo")
+  def takeWhile(p: A => Boolean): Stream[A] = {
+    // `acc` is the result of foldRight over the rest
+    foldRight(empty[A])((a, acc) => if (p(a)) cons(a, acc) else empty)
+  }
 
-  def headOption: Option[A] = sys.error("todo")
+  def forAll(p: A => Boolean): Boolean = {
+    foldRight(true)((a, acc) => p(a) && acc)
+  }
+
+  def headOption: Option[A] = {
+    foldRight(None: Option[A])((a, _) => Some(a))
+  }
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
+  def map[B](f: A => B): Stream[B] = this match {
+    case Empty => empty
+    case Cons(h, t) => cons(f(h()), t().map(f))
+  }
+
+  def filter(f: A => Boolean): Stream[A] = {
+    foldRight(empty[A])((a, acc) => if (f(a)) cons(a, acc) else acc)
+  }
+
+  /*
+  B <: A && Stream[B] <: Stream[A]
+  def foo(sa: Stream[A], a: A) {
+    sa.append(a)
+  }
+
+  foo(sb, a)
+  foo(sb, b)
+   */
+  def append[B >: A](b: => Stream[B]): Stream[B] = foldRight(b)((a, acc) => cons(a, acc))
 
   def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
 }
